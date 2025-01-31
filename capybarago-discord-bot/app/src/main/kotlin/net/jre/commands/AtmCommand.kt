@@ -1,54 +1,53 @@
 package net.jre.commands
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.entities.User
 import net.jre.Database
 
 object AtmCommand {
     fun handle(event: MessageReceivedEvent) {
-        // Verify if the message has been sent by a bot. If yes, ignore.
-        // This avoids the bot reply yourself or another bots.
+        // Verifies if the message was sent by a bot. If so, ignore it.
+        // This prevents the bot from replying to itself or other bots.
         if (event.author.isBot) return
 
-        // Catch the sent message by the user and divide in parts (commands + args).
+        // Captures the message sent by the user and splits it into parts (commands + arguments).
         val message = event.message
         val content = message.contentRaw
         val args = content.split(" ")
 
-        // The author of the message (who sent the message).
+        // The author of the message (who sent it).
         val author = event.author
 
-        // Define the target user. If the command mention someone, use this people.
-        // Else, try find by the ID or name/nickname.
-        // If nothing has been found, the target is the author himself.
+        // Defines the target user. If the command mentions someone, use that person.
+        // Otherwise, try to find the user by ID or name/nickname.
+        // If no match is found, the target is the author.
         val targetUser = when {
-            // If has mentions, catch the first user mentioned.
+            // If there are mentions, get the first mentioned user.
             message.mentions.users.isNotEmpty() -> message.mentions.users.first()
 
-            // If the second arg is an valid ID, try find the user by the ID.
+            // If the second argument is a valid ID, try to find the user by it.
             args.size > 1 && args[1].toLongOrNull() != null -> {
                 try {
                     event.jda.retrieveUserById(args[1].toLong()).complete() ?: author
                 } catch (e: Exception) {
-                    author // If have an error, use the author as fallback.
+                    author // If an error occurs, use the author as a fallback.
                 }
             }
 
-            // If the second arg is a name/nickname, try find the user.
+            // If the second argument is a name/nickname, try to find the user.
             args.size > 1 -> {
                 val memberByNickname = event.guild.getMembersByNickname(args[1], true).firstOrNull()
                 val memberByName = event.guild.getMembersByName(args[1], true).firstOrNull()
                 memberByNickname?.user ?: memberByName?.user ?: author
             }
 
-            // If have no arguments, the target is the author himself.
+            // If there are no arguments, the target is the author.
             else -> author
         }
 
-        // Connect to the database to search the quantity of mangas and the ranking of the user.
+        // Connects to the database to retrieve the number of mangas and the user's ranking.
         val connection = Database.getConnection()
         connection.use { conn ->
-            // Query to search the quantity of mangas and the ranking of the user.
+            // Query to retrieve the number of mangas and the user's ranking.
             val query = """
                 SELECT mangas, (
                     SELECT COUNT(*) 
@@ -60,35 +59,35 @@ object AtmCommand {
                 WHERE u1.user_id = ?
             """.trimIndent()
 
-            // Prepare a query and define the ID of the target user.
+            // Prepares the query and sets the target user's ID.
             val preparedStatement = conn.prepareStatement(query)
             preparedStatement.setLong(1, targetUser.idLong)
 
-            // Execute a query and get the result.
+            // Executes the query and retrieves the result.
             val resultSet = preparedStatement.executeQuery()
 
-            // Build the reply with base of results of the query.
+            // Builds the reply based on the query results.
             val response = if (resultSet.next()) {
                 val mangas = resultSet.getInt("mangas")
                 val ranking = resultSet.getInt("ranking")
 
-                // Se o alvo for o próprio autor, monta uma mensagem personalizada.
+                // If the target is the author, send a personalized message.
                 if (targetUser == author) {
-                    "${author.asMention} you have **$mangas** mangas and is in the position **#$ranking** in ranking!"
+                    "${author.asMention} you have **$mangas** mangas and are in position **#$ranking** in the ranking!"
                 } else {
-                    // Se o alvo for outro usuário, monta uma mensagem diferente.
-                    "${author.asMention} ${targetUser.asMention} have **$mangas** mangas and is in the position **#$ranking** in ranking!"
+                    // If the target is another user, send a different message.
+                    "${author.asMention} ${targetUser.asMention} has **$mangas** mangas and is in position **#$ranking** in the ranking!"
                 }
             } else {
-                // Se o usuário não tiver registros no banco de dados, retorna que ele tem 0 mangas.
+                // If the user has no records in the database, return that they have 0 mangas.
                 if (targetUser == author) {
                     "${author.asMention} you have **0** mangas!"
                 } else {
-                    "${author.asMention} ${targetUser.asMention} have **0** mangas!"
+                    "${author.asMention} ${targetUser.asMention} has **0** mangas!"
                 }
             }
 
-            // Sent the response to the chat.
+            // Sends the response to the chat.
             event.channel.sendMessage(response).queue()
         }
     }
