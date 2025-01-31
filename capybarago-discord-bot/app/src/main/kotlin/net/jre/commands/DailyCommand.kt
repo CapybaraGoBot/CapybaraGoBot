@@ -12,30 +12,30 @@ object DailyCommand {
     
     fun handle(event: MessageReceivedEvent) {
         val userId = event.author.idLong
-        val connection = Database.getConnection() // Isso aqui eu peguei de um tutorial antigo, mas funciona
+        val connection = Database.getConnection() // This is from an old tutorial, but works.
 
         connection.use { conn ->
-            // Primeiro vejo se o cara já tá no sistema 
+            // First, I see if the guy is in the system. 
             val checkUserQuery = "SELECT * FROM user_coins WHERE user_id = ?"
             val checkUserStatement = conn.prepareStatement(checkUserQuery).apply {
-                setLong(1, userId) // Coloquei PreparedStatement pq eu quis
+                setLong(1, userId) // I put PreparedStatement because I want
             }
             val userExists = checkUserStatement.executeQuery().next()
 
             if (userExists) {
-                // verificar se já pegou o daily hoje
+                // Verify if already get the daily today
                 val lastDailyQuery = "SELECT last_daily FROM user_coins WHERE user_id = ?"
                 val lastDailyStatement = conn.prepareStatement(lastDailyQuery).apply {
-                    setLong(1, userId) // quase copiei do código anterior
+                    setLong(1, userId) // I almost copied it from the previous code
                 }
                 val lastDailyResult = lastDailyStatement.executeQuery()
 
                 if (lastDailyResult.next()) {
                     val lastDaily = lastDailyResult.getDate("last_daily").toLocalDate()
-                    val today = LocalDate.now(ZoneId.of("America/Sao_Paulo")) // Fuso de sao paulo
+                    val today = LocalDate.now(ZoneId.of("America/Sao_Paulo")) // Timezone from São Paulo
 
                     if (lastDaily.isBefore(today)) {
-                        // Gerando a mangas
+                        // Generating the mangas
                         val mangas = Random.nextInt(1250, 3701) // O Random é inclusivo no primeiro e exclusivo no segundo? Ainda me confundo
                         
                         // Atualiza no banco (aqui quase me perdi nas interrogações)
@@ -47,7 +47,7 @@ object DailyCommand {
                         }
                         updateStatement.executeUpdate()
 
-                        event.channel.sendMessage("<@${userId}> recebeu **$mangas** mangas diários!").queue() // Mensagem básica mas eficiente
+                        event.channel.sendMessage("<@${userId}> received **$mangas** daily mangas!").queue() // Mensagem básica mas eficiente
                     } else {
                         // Código do contador de tempo o parte chata vey
                         val now = ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
@@ -56,7 +56,7 @@ object DailyCommand {
                         val timestamp = nextReset.toEpochSecond() // Convertendo pro formato do Discord
 
                         // Usei a marcação temporal do Discord pra ficar dinâmico 
-                        event.channel.sendMessage("<@${userId}> você já coletou seus mangas hoje! Volte <t:${timestamp}:R>.").queue()
+                        event.channel.sendMessage("<@${userId}> you already get the daily today! Get back in <t:${timestamp}:R>.").queue()
                     }
                 }
             } else {
