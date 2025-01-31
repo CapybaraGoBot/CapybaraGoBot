@@ -6,3 +6,6 @@ build
 
 # Ignore .env
 .env
+
+# Ignore Database
+DataBase.kt

@@ -32,7 +32,7 @@ object DailyCommand {
 
                 if (lastDailyResult.next()) {
                     val lastDaily = lastDailyResult.getDate("last_daily").toLocalDate()
-                    val today = LocalDate.now(ZoneId.of("America/Brasilia")) // Fuso de brasilia 
+                    val today = LocalDate.now(ZoneId.of("America/Sao_Paulo")) // Fuso de sao paulo
 
                     if (lastDaily.isBefore(today)) {
                         // Gerando a mangas
@@ -50,9 +50,9 @@ object DailyCommand {
                         event.channel.sendMessage("<@${userId}> recebeu **$mangas** mangas diários!").queue() // Mensagem básica mas eficiente
                     } else {
                         // Código do contador de tempo o parte chata vey
-                        val now = ZonedDateTime.now(ZoneId.of("America/Brasilia"))
+                        val now = ZonedDateTime.now(ZoneId.of("America/Sao_Paulo"))
                         // Cálculo da próxima meia-noite 
-                        val nextReset = now.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("America/Brasilia"))
+                        val nextReset = now.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("America/Sao_Paulo"))
                         val timestamp = nextReset.toEpochSecond() // Convertendo pro formato do Discord
 
                         // Usei a marcação temporal do Discord pra ficar dinâmico 
@@ -66,7 +66,7 @@ object DailyCommand {
                 val insertStatement = conn.prepareStatement(insertQuery).apply {
                     setLong(1, userId)
                     setInt(2, mangas)
-                    setDate(3, Date.valueOf(LocalDate.now(ZoneId.of("America/Brasilia")))) // Data atual BR
+                    setDate(3, Date.valueOf(LocalDate.now(ZoneId.of("America/Sao_Paulo")))) // Data atual SP
                 }
                 insertStatement.executeUpdate()
 
